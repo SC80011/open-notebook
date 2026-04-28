@@ -2,7 +2,7 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [ "main" ]  # 只有当代码合并进 main 分支时才触发
+    branches: [ "main" ]
 
 jobs:
   build-and-push:
@@ -15,11 +15,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 关键步骤：将 GitHub 用户名（如 SC80011）转换为全小写（sc80011）
-      # 因为 Docker 镜像仓库名强制要求全小写
-      - name: Lowercase the owner name
+      # 关键改进：直接处理完整的仓库路径并转为小写
+      - name: Prepare Docker Metadata
+        id: meta
         run: |
-          echo "OWNER_LC=${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' >> $GITHUB_ENV
+          # GITHUB_REPOSITORY 的格式是 "Owner/Repo"
+          # 使用 ,, 将其全部转为小写
+          REPO_NAME_LC="${GITHUB_REPOSITORY,,}"
+          echo "image_path=ghcr.io/${REPO_NAME_LC}" >> $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -33,8 +36,7 @@ jobs:
         with:
           context: .
           push: true
-          # 动态引用转为小写后的用户名 ${{ env.OWNER_LC }}
-          # 自动指向你自己的仓库名 open-notebook
+          # 使用上面步骤输出的 image_path，绝对不会出现双斜杠
           tags: |
-            ghcr.io/${{ env.OWNER_LC }}/open-notebook:latest
-            ghcr.io/${{ env.OWNER_LC }}/open-notebook:${{ github.sha }}
+            ${{ steps.meta.outputs.image_path }}:latest
+            ${{ steps.meta.outputs.image_path }}:${{ github.sha }}
