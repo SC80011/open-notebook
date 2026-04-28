@@ -15,6 +15,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 关键步骤：将 GitHub 用户名（如 SC80011）转换为全小写（sc80011）
+      # 因为 Docker 镜像仓库名强制要求全小写
+      - name: Lowercase the owner name
+        run: |
+          echo "OWNER_LC=${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' >> $GITHUB_ENV
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -23,9 +29,12 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
-              uses: docker/build-push-action@v5
-              with:
-                context: .
-                push: true
-                # 手动将 SC80011 改为 sc80011
-                tags: ghcr.io/sc80011/open-notebook:latest
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # 动态引用转为小写后的用户名 ${{ env.OWNER_LC }}
+          # 自动指向你自己的仓库名 open-notebook
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/open-notebook:latest
+            ghcr.io/${{ env.OWNER_LC }}/open-notebook:${{ github.sha }}
