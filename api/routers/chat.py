@@ -13,6 +13,10 @@ from open_notebook.exceptions import (
     NotFoundError,
 )
 from open_notebook.graphs.chat import graph as chat_graph
+from open_notebook.utils.chat_session_execution import (
+    get_session_graph_lock,
+    invoke_graph_sync,
+)
 from open_notebook.utils.graph_utils import get_session_message_count
 
 router = APIRouter()
@@ -349,38 +353,39 @@ async def execute_chat(request: ExecuteChatRequest):
             else getattr(session, "model_override", None)
         )
 
-        # Get current state
-        # Use sync get_state() in a thread since SqliteSaver doesn't support async
-        current_state = await asyncio.to_thread(
-            chat_graph.get_state,
-            config=RunnableConfig(configurable={"thread_id": full_session_id}),
-        )
+        configurable = {"thread_id": full_session_id, "model_id": model_override}
 
-        # Prepare state for execution
-        state_values = current_state.values if current_state else {}
-        state_values["messages"] = state_values.get("messages", [])
-        state_values["context"] = request.context
-        state_values["model_override"] = model_override
+        exec_lock = await get_session_graph_lock(full_session_id)
+        async with exec_lock:
+            # Get current state
+            # Use sync get_state() in a thread since SqliteSaver doesn't support async
+            current_state = await asyncio.to_thread(
+                chat_graph.get_state,
+                config=RunnableConfig(configurable={"thread_id": full_session_id}),
+            )
 
-        # Add user message to state
-        from langchain_core.messages import HumanMessage
+            # Prepare state for execution
+            state_values = current_state.values if current_state else {}
+            state_values["messages"] = state_values.get("messages", [])
+            state_values["context"] = request.context
+            state_values["model_override"] = model_override
 
-        user_message = HumanMessage(content=request.message)
-        state_values["messages"].append(user_message)
+            # Add user message to state
+            from langchain_core.messages import HumanMessage
 
-        # Execute chat graph
-        result = chat_graph.invoke(
-            input=state_values,  # type: ignore[arg-type]
-            config=RunnableConfig(
-                configurable={
-                    "thread_id": full_session_id,
-                    "model_id": model_override,
-                }
-            ),
-        )
+            user_message = HumanMessage(content=request.message)
+            state_values["messages"].append(user_message)
 
-        # Update session timestamp
-        await session.save()
+            # Run graph off the asyncio event-loop thread so other sessions can progress
+            result = await asyncio.to_thread(
+                invoke_graph_sync,
+                chat_graph,
+                state_values,
+                configurable,
+            )
+
+            # Update session timestamp (same critical section per session)
+            await session.save()
 
         # Convert messages to response format
         messages: list[ChatMessage] = []

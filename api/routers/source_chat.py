@@ -15,6 +15,10 @@ from open_notebook.exceptions import (
     NotFoundError,
 )
 from open_notebook.graphs.source_chat import source_chat_graph as source_chat_graph
+from open_notebook.utils.chat_session_execution import (
+    get_session_graph_lock,
+    invoke_graph_sync,
+)
 from open_notebook.utils.graph_utils import get_session_message_count
 
 router = APIRouter()
@@ -419,36 +423,40 @@ async def stream_source_chat_response(
 ) -> AsyncGenerator[str, None]:
     """Stream the source chat response as Server-Sent Events."""
     try:
-        # Get current state
-        # Use sync get_state() in a thread since SqliteSaver doesn't support async
-        current_state = await asyncio.to_thread(
-            source_chat_graph.get_state,
-            config=RunnableConfig(configurable={"thread_id": session_id}),
-        )
+        configurable = {"thread_id": session_id, "model_id": model_override}
 
-        # Prepare state for execution
-        state_values = current_state.values if current_state else {}
-        state_values["messages"] = state_values.get("messages", [])
-        state_values["source_id"] = source_id
-        state_values["model_override"] = model_override
+        exec_lock = await get_session_graph_lock(session_id)
+        async with exec_lock:
+            # Get current state
+            # Use sync get_state() in a thread since SqliteSaver doesn't support async
+            current_state = await asyncio.to_thread(
+                source_chat_graph.get_state,
+                config=RunnableConfig(configurable={"thread_id": session_id}),
+            )
 
-        # Add user message to state
-        user_message = HumanMessage(content=message)
-        state_values["messages"].append(user_message)
+            # Prepare state for execution
+            state_values = current_state.values if current_state else {}
+            state_values["messages"] = state_values.get("messages", [])
+            state_values["source_id"] = source_id
+            state_values["model_override"] = model_override
 
-        # Send user message event
-        user_event = {"type": "user_message", "content": message, "timestamp": None}
-        yield f"data: {json.dumps(user_event)}\n\n"
+            # Add user message to state
+            user_message = HumanMessage(content=message)
+            state_values["messages"].append(user_message)
 
-        # Execute source chat graph synchronously (like notebook chat does)
-        result = source_chat_graph.invoke(
-            input=state_values,  # type: ignore[arg-type]
-            config=RunnableConfig(
-                configurable={"thread_id": session_id, "model_id": model_override}
-            ),
-        )
+            # Send user message event
+            user_event = {"type": "user_message", "content": message, "timestamp": None}
+            yield f"data: {json.dumps(user_event)}\n\n"
 
-        # Stream the complete AI response
+            # Run graph off the asyncio event-loop thread (same lock as notebook chat per session)
+            result = await asyncio.to_thread(
+                invoke_graph_sync,
+                source_chat_graph,
+                state_values,
+                configurable,
+            )
+
+        # Stream the complete AI response (outside session lock; checkpoint already updated)
         if "messages" in result:
             for msg in result["messages"]:
                 if hasattr(msg, "type") and msg.type == "ai":

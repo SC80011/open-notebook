@@ -1,0 +1,31 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ "main" ]  # 只有当代码合并进 main 分支时才触发
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # 镜像名字格式为: ghcr.io/用户名/项目名:latest
+          tags: ghcr.io/${{ github.repository }}:latest
