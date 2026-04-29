@@ -27,6 +27,7 @@ import { LanguageToggle } from '@/components/common/LanguageToggle'
 import type { TFunction } from 'i18next'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Separator } from '@/components/ui/separator'
+import { ForkBadge } from '@/components/common/ForkBadge'
 import {
   Book,
   Search,
@@ -114,7 +115,7 @@ export function AppSidebar() {
       >
         <div
           className={cn(
-            'flex h-16 items-center group',
+            'flex h-16 shrink-0 items-center group border-b border-sky-200/70 bg-sky-100/85 dark:border-sidebar-border dark:bg-sidebar',
             isCollapsed ? 'justify-center px-2' : 'justify-between px-4'
           )}
         >
@@ -138,10 +139,11 @@ export function AppSidebar() {
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 <Image src="/logo.svg" alt={t('common.appName')} width={32} height={32} />
-                <span className="text-base font-medium text-sidebar-foreground">
-                  {t('common.appName')}
+                <span className="flex min-w-0 items-baseline text-base font-medium text-sidebar-foreground">
+                  <span className="truncate">{t('common.appName')}</span>
+                  <ForkBadge className="shrink-0" />
                 </span>
               </div>
               <Button

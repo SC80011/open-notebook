@@ -33,6 +33,7 @@ export const frFR = {
     quickActions: "Actions rapides",
     quickActionsDesc: "Navigation, recherche, poser une question, thème",
     appName: "Open Notebook",
+    forkBadge: "cc",
     add: "Ajouter",
     remove: "Retirer",
     confirm: "Confirmer",

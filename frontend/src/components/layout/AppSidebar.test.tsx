@@ -18,6 +18,7 @@ describe('AppSidebar', () => {
 
     // With mocked t() returning keys, check for translation key strings
     expect(screen.getByText('common.appName')).toBeDefined()
+    expect(screen.getByText('common.forkBadge')).toBeDefined()
     expect(screen.getByText('navigation.sources')).toBeDefined()
     expect(screen.getByText('navigation.notebooks')).toBeDefined()
   })

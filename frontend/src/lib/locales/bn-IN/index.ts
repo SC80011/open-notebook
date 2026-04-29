@@ -33,6 +33,7 @@ export const bnIN = {
     quickActions: "দ্রুত ক্রিয়া",
     quickActionsDesc: "নেভিগেশন, অনুসন্ধান, প্রশ্ন, থিম",
     appName: "ওপেন নোটবুক",
+    forkBadge: "cc",
     add: "যোগ করুন",
     remove: "সরান",
     confirm: "নিশ্চিত করুন",

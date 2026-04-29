@@ -33,6 +33,7 @@ export const zhCN = {
     quickActions: "快捷操作",
     quickActionsDesc: "导航、搜索、提问、主题",
     appName: "Open Notebook",
+    forkBadge: "cc",
     add: "添加",
     remove: "移除",
     confirm: "确认",

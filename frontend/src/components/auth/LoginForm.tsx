@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertCircle } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { ForkBadge } from '@/components/common/ForkBadge'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
 export function LoginForm() {
@@ -141,7 +142,10 @@ export function LoginForm() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle>{t('auth.loginTitle')}</CardTitle>
+          <CardTitle className="flex flex-wrap items-center justify-center gap-x-1">
+            <span>{t('auth.loginTitle')}</span>
+            <ForkBadge className="ml-0 align-middle" />
+          </CardTitle>
           <CardDescription>
             {t('auth.loginDesc')}
           </CardDescription>

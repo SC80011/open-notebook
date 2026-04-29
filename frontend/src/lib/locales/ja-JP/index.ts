@@ -33,6 +33,7 @@ export const jaJP = {
     quickActions: "クイックアクション",
     quickActionsDesc: "ナビゲーション、検索、質問、テーマ",
     appName: "Open Notebook",
+    forkBadge: "cc",
     add: "追加",
     remove: "削除",
     confirm: "確認",

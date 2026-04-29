@@ -33,6 +33,7 @@ export const ptBR = {
     quickActions: "Ações rápidas",
     quickActionsDesc: "Navegação, busca, perguntar, tema",
     appName: "Open Notebook",
+    forkBadge: "cc",
     add: "Adicionar",
     remove: "Remover",
     confirm: "Confirmar",

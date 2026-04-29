@@ -33,6 +33,7 @@ export const ruRU = {
     quickActions: "Быстрые действия",
     quickActionsDesc: "Навигация, поиск, запрос, тема",
     appName: "Open Notebook",
+    forkBadge: "cc",
     add: "Добавить",
     remove: "Удалить",
     confirm: "Подтвердить",
